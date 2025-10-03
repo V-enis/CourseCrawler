@@ -42,6 +42,9 @@ INSTALLED_APPS = [
     # Local
     'accounts.apps.AccountsConfig',
     'courses.apps.CoursesConfig',
+    'degrees.apps.DegreesConfig',
+    'syllabus.apps.SyllabusConfig',
+    'ingestion.apps.IngestionConfig',
 ]
 
 MIDDLEWARE = [

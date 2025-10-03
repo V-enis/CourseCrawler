@@ -41,12 +41,16 @@ class Course(models.Model):
     """
     A single online course 
     """
-    DIFFICULTY_CHOICES = [
-        ("beginner", "Beginner"),
-        ("intermediate", "Intermediate"),
-        ("advanced", "Advanced"),
+    CATEGORY_CHOICES = [
+        ("GENED", "General Education"),
+        ("FOUND", "Foundation"),
+        ("CORE", "Core Major"),
+        ("ELECT", "Elective"),
+        ("CAP", "Capstone"),
+        ("RES", "Research"),
     ]
 
+    code = models.CharField(max_length=20, unique=True, null=True, blank=True) 
     title = models.CharField(max_length=100)
     slug = models.SlugField(default="", null=False)
     platform = models.ForeignKey(
@@ -64,22 +68,35 @@ class Course(models.Model):
         related_name="courses",
     )
     subjects = models.ManyToManyField(Subject, related_name="courses")
-    description = models.TextField()
-    difficulty = models.CharField(
-        max_length=20,
-        choices=DIFFICULTY_CHOICES,
-        default="beginner",
+    description = models.TextField(blank=True)
+    category = models.CharField(
+        max_length=10,
+        choices=CATEGORY_CHOICES,
+        blank=True,
+    )
+
+    prerequisites = models.ManyToManyField(
+        "self",
+        symmetrical=False,
+        blank=True,
+        related_name="unlocks"
     )
     url = models.URLField(max_length=250, blank=True, null=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(blank=True, null=True)
+
+    active_version = models.ForeignKey(
+        "CourseVersion",
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name="current_for"
+    )
     
     class Meta:
         ordering = ["title"]
-        unique_together = ("title", "platform")
 
     def __str__(self):
-        return f"{self.title} ({self.platform})"
+        return f"{self.title} ({self.platform or 'N/A'})"
     
 
 class CourseVersion(models.Model):
@@ -87,11 +104,16 @@ class CourseVersion(models.Model):
     A Snapshot of a course from a date (Sep 2024, Aug 2026, etc.)
     """
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    syllabus_text = models.JSONField(blank=True, null=True)
-    created_at = models.DateField(blank=True, null=True)
+    version = models.CharField(max_length=50, default="v1")
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    syllabus_json = models.JSONField(blank=True, null=True)
+    learning_outcomes = models.TextField(blank=True)
+    assessment_type = models.CharField(max_length=100, blank=True)
+    notes = models.TextField(blank=True)
 
     def __str__(self):
-        return f"{self.course} ({self.created_at})"
+        return f"{self.course} ({self.version})"
 
 
 class Resource(models.Model):

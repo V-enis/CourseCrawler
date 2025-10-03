@@ -47,7 +47,7 @@ class CourseSerializer(serializers.ModelSerializer):
             "platform",
             "subjects",
             "description",
-            "difficulty",
+            "category",
             "is_active",
             "url",
         )

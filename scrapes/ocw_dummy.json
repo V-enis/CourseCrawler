@@ -1,0 +1,6 @@
+{
+  "courses": [
+    {"title": "Introduction to Computer Science", "url": "https://ocw.mit.edu/6-0001"},
+    {"title": "Linear Algebra", "url": "https://ocw.mit.edu/18-06"}
+  ]
+}
