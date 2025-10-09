@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from .models import Semester, Degree
-from courses.serializers import CourseSerializer
+from apps.courses.serializers import CourseSerializer
 
 
 class DegreeSerializer(serializers.ModelSerializer):

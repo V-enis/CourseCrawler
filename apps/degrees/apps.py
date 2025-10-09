@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class IngestionConfig(AppConfig):
+class DegreesConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'ingestion'
+    name = 'apps.degrees'

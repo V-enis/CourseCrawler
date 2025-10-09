@@ -1,6 +1,6 @@
 from django.db import models
 
-from courses.models import Subject
+from apps.courses.models import Subject
 
 
 class College(models.Model):
