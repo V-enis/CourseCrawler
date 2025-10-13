@@ -7,6 +7,12 @@
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
+# env
+from environs import Env
+
+env = Env()
+env.read_env()
+
 # Django settings start
 import sys
 sys.path.append(r'C:\Users\lilit\Desktop\Dev\personal-projects\CourseCrawler\cc-backend')
@@ -22,7 +28,7 @@ django.setup()
 
 BOT_NAME = "cc_scrapers"
 
-SPIDER_MODULES = ["cc_scrapers.spiders"]
+SPIDER_MODULES = ["cc_scrapers.spiders", "cc_scrapers.spiders.courses", "cc_scrapers.spiders.syllabi"]
 NEWSPIDER_MODULE = "cc_scrapers.spiders"
 
 ADDONS = {}
@@ -38,7 +44,7 @@ TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-#USER_AGENT = "cc_scrapers (+http://www.yourdomain.com)"
+USER_AGENT = env.str("USER_AGENT")
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = True
@@ -46,7 +52,7 @@ ROBOTSTXT_OBEY = True
 # Concurrency and throttling settings
 #CONCURRENT_REQUESTS = 16
 CONCURRENT_REQUESTS_PER_DOMAIN = 1
-DOWNLOAD_DELAY = 1
+#DOWNLOAD_DELAY = 1
 
 # Disable cookies (enabled by default)
 #COOKIES_ENABLED = False
@@ -80,9 +86,9 @@ DOWNLOAD_DELAY = 1
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-ITEM_PIPELINES = {
-    "cc_scrapers.pipelines.DjangoPipeline": 300,
-}
+# ITEM_PIPELINES = {
+#     "cc_scrapers.pipelines.DjangoPipeline": 300,
+# }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html

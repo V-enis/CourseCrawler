@@ -69,6 +69,7 @@ class Course(models.Model):
     )
     subjects = models.ManyToManyField(Subject, related_name="courses")
     description = models.TextField(blank=True)
+    learning_outcomes = models.TextField(blank=True)
     category = models.CharField(
         max_length=10,
         choices=CATEGORY_CHOICES,
@@ -103,6 +104,7 @@ class CourseVersion(models.Model):
     """
     A Snapshot of a course from a date (Sep 2024, Aug 2026, etc.)
     """
+   
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     version = models.CharField(max_length=50, default="v1")
     start_date = models.DateField(null=True, blank=True)

@@ -4,25 +4,25 @@
 # https://docs.scrapy.org/en/latest/topics/items.html
 
 import scrapy
-
-
-class CcScrapersItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+from itemloaders.processors import MapCompose
+from w3lib.html import remove_tags
 
 # One course 
 class CourseItem(scrapy.Item):
-    code = scrapy.Field()
-    title = scrapy.Field()
-    slug = scrapy.Field()
-    platform = scrapy.Field()
-    provider = scrapy.Field()
-    subjects = scrapy.Field()
-    description = scrapy.Field()
-    category = scrapy.Field()
-    prerequisites = scrapy.Field()
-    url = scrapy.Field()
-    is_active = scrapy.Field()
-    created_at = scrapy.Field()
-    active_version = scrapy.Field()
+    title = scrapy.Field(input_processor=MapCompose(remove_tags,))
+
+    url = scrapy.Field(
+        input_processor=MapCompose(
+            remove_tags,
+            lambda url, response=None: response.urljoin(url) if response else url
+            )
+    )
+    
+    description = scrapy.Field(input_processor=MapCompose(remove_tags))
+    learning_outcomes = scrapy.Field(input_processor=MapCompose(remove_tags))
+    platform_name = scrapy.Field(input_processor=MapCompose(remove_tags))
+    provider_name = scrapy.Field(input_processor=MapCompose(remove_tags))
+    subjects = scrapy.Field(input_processor=MapCompose(remove_tags))
+
+
+
