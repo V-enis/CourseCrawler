@@ -20,8 +20,9 @@ class CourseItem(scrapy.Item):
     
     description = scrapy.Field(input_processor=MapCompose(remove_tags))
     learning_outcomes = scrapy.Field(input_processor=MapCompose(remove_tags))
-    platform_name = scrapy.Field(input_processor=MapCompose(remove_tags))
-    provider_name = scrapy.Field(input_processor=MapCompose(remove_tags))
+    platform = scrapy.Field(input_processor=MapCompose(remove_tags))
+    provider = scrapy.Field(input_processor=MapCompose(remove_tags))
+    prerequisites = scrapy.Field(input_processor=MapCompose(remove_tags))
     subjects = scrapy.Field(input_processor=MapCompose(remove_tags))
 
 

@@ -66,3 +66,8 @@ urllib3==2.5.0
 w3lib==2.3.1
 wcwidth==0.2.14
 zope.interface==8.0.1
+gunicorn 
+celery[redis]
+pgvector
+sentence-transformers
+numpy

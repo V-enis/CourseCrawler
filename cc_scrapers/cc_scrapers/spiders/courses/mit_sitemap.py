@@ -1,6 +1,7 @@
 from scrapy.spiders import SitemapSpider
 from scrapy.loader import ItemLoader
 from ...items import CourseItem
+from w3lib.html import remove_tags
 
 class MitOcwSitemapSpider(SitemapSpider):
     name = "mit"
@@ -17,10 +18,13 @@ class MitOcwSitemapSpider(SitemapSpider):
         il = ItemLoader(item=CourseItem(), response=response)
         il.add_css("title", "title::text")
         il.add_value("url", response.url)
-        il.add_css("description", "#expanded-description::text, #full-description::text")
+        il.add_css(
+            "description",
+            "#expanded-description::text, #expanded-description p:first-of-type::text, #full-description::text, #full-description p:first-of-type::text"
+        )
         il.add_css("subjects", "a.course-info-topic::text")
-        il.add_value("platform_name", "MIT OpenCourseWare")
-        il.add_value("provider_name", "MIT OCW")
+        il.add_value("platform", "MIT OpenCourseWare")
+        il.add_value("provider", "MIT OCW")
 
         item = il.load_item()
 
@@ -68,6 +72,10 @@ class MitOcwSitemapSpider(SitemapSpider):
                 learning_outcomes.extend([r.strip() for r in results if r.strip()])
 
         item["learning_outcomes"] = learning_outcomes or []
+
+        # prerequisites
+        raw_html = response.css("h3#prerequisites + p, h3#pre-requisites + p").get()
+        item["prerequisites"] = remove_tags(raw_html) if raw_html else ""
 
         self.logger.info(f"YIELDING course: {item.get('title')} with {len(item['learning_outcomes'])} outcomes")
         yield item

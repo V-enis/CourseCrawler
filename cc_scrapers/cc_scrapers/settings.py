@@ -50,8 +50,8 @@ USER_AGENT = env.str("USER_AGENT")
 ROBOTSTXT_OBEY = True
 
 # Concurrency and throttling settings
-#CONCURRENT_REQUESTS = 16
-CONCURRENT_REQUESTS_PER_DOMAIN = 1
+CONCURRENT_REQUESTS = 16
+CONCURRENT_REQUESTS_PER_DOMAIN = 8
 #DOWNLOAD_DELAY = 1
 
 # Disable cookies (enabled by default)
@@ -86,9 +86,9 @@ CONCURRENT_REQUESTS_PER_DOMAIN = 1
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-# ITEM_PIPELINES = {
-#     "cc_scrapers.pipelines.DjangoPipeline": 300,
-# }
+ITEM_PIPELINES = {
+    "cc_scrapers.pipelines.SaveToDjangoPipeline": 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html

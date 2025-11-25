@@ -1,4 +1,5 @@
 from django.db import models
+from pgvector.django import VectorField
 
 
 class Platform(models.Model):
@@ -31,7 +32,6 @@ class Subject(models.Model):
     Used to filter/search courses.
     """
     name = models.CharField(max_length=100, unique=True)
-    slug = models.SlugField(max_length=120, unique=True)
 
     def __str__(self):
         return self.name
@@ -51,8 +51,7 @@ class Course(models.Model):
     ]
 
     code = models.CharField(max_length=20, unique=True, null=True, blank=True) 
-    title = models.CharField(max_length=100)
-    slug = models.SlugField(default="", null=False)
+    title = models.CharField(max_length=500)
     platform = models.ForeignKey(
         Platform,
         on_delete=models.PROTECT,
@@ -69,20 +68,15 @@ class Course(models.Model):
     )
     subjects = models.ManyToManyField(Subject, related_name="courses")
     description = models.TextField(blank=True)
-    learning_outcomes = models.TextField(blank=True)
+    learning_outcomes = models.JSONField(blank=True, null=True)
     category = models.CharField(
         max_length=10,
         choices=CATEGORY_CHOICES,
         blank=True,
     )
 
-    prerequisites = models.ManyToManyField(
-        "self",
-        symmetrical=False,
-        blank=True,
-        related_name="unlocks"
-    )
-    url = models.URLField(max_length=250, blank=True, null=True)
+    prerequisites = models.TextField(blank=True)
+    url = models.URLField(max_length=500, blank=True, null=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(blank=True, null=True)
 
@@ -92,6 +86,17 @@ class Course(models.Model):
         on_delete=models.SET_NULL,
         related_name="current_for"
     )
+
+    embedding = VectorField(dimensions=384, blank=True, null=True)
+
+    def get_text_for_embedding(self):
+        """
+        Concatenates the relevant text fields for embedding generation.
+        This keeps the logic consistent and tied to the model.
+        """
+        # Adjust these fields to match the actual field names in your model
+        fields = [self.title, self.description, self.subjects, self.learning_outcomes, self.category, self.prerequisites]
+        return ". ".join(str(field) for field in fields if field and str(field).strip())
     
     class Meta:
         ordering = ["title"]
