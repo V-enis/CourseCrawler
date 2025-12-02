@@ -48,5 +48,19 @@ services:
       redis:
         condition: service_healthy
 
+  beat:
+    build: .
+    container_name: cc_celery_beat
+    command: celery -A config beat -l info
+    volumes:
+      - .:/code
+    env_file:
+      - ./.env
+    depends_on:
+      app:
+        condition: service_started
+      redis:
+        condition: service_healthy
+
 volumes:
   postgres_data:

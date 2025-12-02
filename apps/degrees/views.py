@@ -1,26 +1,15 @@
-from rest_framework import generics
-from django.shortcuts import get_object_or_404
+from rest_framework import viewsets, permissions
+from .models import Degree
+from .serializers import DegreeSerializer 
 
-from .models import Semester, Degree
-from .serializers import DegreeSerializer, SemesterSerializer
-
-
-class DegreeList(generics.ListAPIView):
-    queryset = Degree.objects.all()
-    serializer_class = DegreeSerializer
-
-
-
-class DegreeDetail(generics.RetrieveAPIView):
-    queryset = Degree.objects.all()
-    serializer_class = DegreeSerializer
-
-
-class DegreeSemesterList(generics.ListAPIView):
-    def get_queryset(self):
-        degree = get_object_or_404(Degree, pk=self.kwargs['pk'])
-        return Semester.objects.filter(degree=degree)
-    serializer_class = SemesterSerializer
-
-
-# Create your views here.
+class DegreeViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet for viewing Degrees: both a 'list' of all degrees and a 'retrieve' action for a single
+    degree's full nested details (semesters and courses).
+    """
+    queryset = Degree.objects.all().prefetch_related(
+        'semesters__courses__platform',
+        'semesters__courses__provider'
+    )
+    permission_classes = [permissions.AllowAny] # Allow public read-only access.
+    serializer_class = DegreeSerializer 

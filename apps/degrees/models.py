@@ -12,15 +12,16 @@ class Semester(models.Model):
         related_name='semesters',
     )
     year = models.PositiveSmallIntegerField()
+    number = models.PositiveSmallIntegerField(default=1)
     theme = models.CharField(max_length=200, blank=True)
     courses = models.ManyToManyField(Course, related_name="semesters")
 
     class Meta:
-        ordering = ['year']
-        unique_together = ('degree', 'year')
+        ordering = ['year', 'number']
+        unique_together = ('degree', 'year', 'number')
 
     def __str__(self):
-        return f"{self.degree.get_level_display()} Year {self.year}"
+        return f"{self.degree} - Year {self.year}, Sem {self.number}"
     
 
 class Degree(models.Model):

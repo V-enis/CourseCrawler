@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 from environs import Env
+import os
 
 env = Env()
 env.read_env()
@@ -53,6 +54,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -125,6 +127,11 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# dir where collectstatic will gather all static files
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
@@ -157,3 +164,23 @@ CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
+
+# ==============================================================================
+# HUGGING FACE / LOCAL LLM SETTINGS
+# ==============================================================================
+HF_INFERENCE_ENDPOINT_URL = env.str("HF_INFERENCE_ENDPOINT_URL", default=None)
+HF_INFERENCE_ENDPOINT_TOKEN = env.str("HF_INFERENCE_ENDPOINT_TOKEN", default=None)
+
+# ==============================================================================
+# CELERY BEAT (SCHEDULER) SETTINGS
+# ==============================================================================
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    'run-mit-scraper-weekly': {
+        'task': 'apps.ingestion.tasks.run_mit_ocw_scraper',
+        
+        # every Sunday morning at 4:05 AM UTC
+        'schedule': crontab(minute='5', hour='4', day_of_week='sun'),
+    },
+}

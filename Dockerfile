@@ -6,6 +6,8 @@ ENV PYTHONPATH /code
 
 WORKDIR /code
 
+RUN apt-get update && apt-get install -y build-essential cmake
+
 COPY requirements.txt /code/
 
 RUN pip install torch --index-url https://download.pytorch.org/whl/cpu

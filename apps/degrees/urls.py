@@ -1,13 +1,7 @@
-from django.urls import path
+from rest_framework.routers import DefaultRouter
+from .views import DegreeViewSet
 
-from .views import (
-    DegreeList,
-    DegreeDetail,
-    DegreeSemesterList,
-)
+router = DefaultRouter()
+router.register(r'degrees', DegreeViewSet, basename='degree')
 
-urlpatterns = [
-    path("", DegreeList.as_view(), name="degree_list"),
-    path("<int:pk>/", DegreeDetail.as_view(), name="degree_detail"),
-    path("<int:pk>/semesters/", DegreeSemesterList.as_view(), name="degree_semester_list"),
-]
+urlpatterns = router.urls
