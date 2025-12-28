@@ -60,7 +60,7 @@ services:
 
   # --- Frontend Service (from cc-frontend) ---
   - name: web
-    type: static
+    type: static_site
     rootDir: ./cc-frontend/frontend
     buildCommand: "npm install && npm run build"
     publishDir: dist
