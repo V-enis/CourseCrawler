@@ -1,0 +1,56 @@
+/* frontend/src/css/DegreeDetail.css */
+
+.degree-detail-pg {
+    max-width: '1000px';
+    margin: 'auto';
+    padding-bottom: '50px';
+}
+
+.degree-structure {
+    margin-top: 3rem;
+}
+
+/* The White Banner for Year */
+.year-number {
+    background-color: var(--text-white);
+    color: var(--bg-primary);
+    padding: 0.5rem 1rem;
+    font-size: 1.5rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    /* Slight rough edge look from sketch? Keeping it clean for now */
+    border-radius: 2px;
+}
+
+.year-content {
+    border-left: 2px solid var(--border-color);
+    margin-left: 1rem;
+    padding-left: 2rem;
+}
+
+/* The Semester Box */
+.semester {
+    margin-bottom: 3rem;
+}
+
+.semester-number {
+    display: inline-block;
+    border: 2px solid var(--text-white);
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-white);
+    margin-bottom: 1.5rem;
+}
+
+.semester-courses ul {
+    padding: 0;
+    margin: 0;
+}
+
+.semester-courses li {
+    list-style: none;
+}

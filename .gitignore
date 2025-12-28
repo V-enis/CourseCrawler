@@ -6,3 +6,36 @@ local.env
 models/
 staticfiles/
 celerybeat-schedule
+
+# --- General ---
+.idea/
+.vscode/
+*.DS_Store
+Thumbs.db
+
+# --- Python / Django (Backend) ---
+cc-backend/__pycache__/
+cc-backend/*.pyc
+cc-backend/.venv/
+cc-backend/staticfiles/
+cc-backend/celerybeat-schedule
+cc-backend/celerybeat.pid
+
+# --- Node / React (Frontend) ---
+cc-frontend/node_modules/
+cc-frontend/frontend/dist/
+cc-frontend/frontend/npm-debug.log*
+cc-frontend/frontend/yarn-debug.log*
+cc-frontend/frontend/yarn-error.log*
+
+# --- Local Secrets & Environment ---
+.env
+.env.*
+cc-backend/.env
+local.env
+
+# --- Scrapy ---
+cc-backend/.scrapy/
+
+# --- LLM Models ---
+cc-backend/models/*.gguf

@@ -1,0 +1,51 @@
+/* frontend/src/css/Course.css */
+.course-content {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.course-title-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.course-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-white);
+}
+
+.course-platform {
+    font-size: 0.8rem;
+    color: #8b949e;
+    margin: 0;
+    margin-top: 4px;
+}
+
+.course-title-bar button {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: 0.2s;
+}
+
+.course-title-bar button:hover {
+    border-color: var(--text-white);
+}
+
+.course-title-bar a {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.course-description {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #8b949e;
+    max-width: 90%;
+}

@@ -1,0 +1,20 @@
+/* frontend/src/css/Dashboard.css */
+.dashboard-title {
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.my-enrollments {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 2rem;
+    margin: 0 auto;
+}
+
+.no-enrollments {
+    text-align: center;
+    font-size: 1.2rem;
+    color: var(--text-primary);
+    margin-top: 3rem;
+}
