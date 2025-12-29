@@ -19,7 +19,7 @@ services:
   - name: web
     type: web
     env: static
-    rootDir: cc-frontend
+    rootDir: cc-frontend/frontend
     buildCommand: "npm install && npm run build"
     staticPublishPath: ./dist
     routes:

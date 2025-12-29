@@ -1,8 +1,6 @@
 from celery import shared_task
-from sentence_transformers import SentenceTransformer
 from .models import Course
 import numpy as np
-from apps.ml.services import get_embedding_model
 
 
 @shared_task
@@ -10,6 +8,9 @@ def generate_embedding_for_course(course_id):
     """
     A Celery task to generate and save an embedding for a single course.
     """
+    from apps.ml.services import get_embedding_model
+    from sentence_transformers import SentenceTransformer
+
     try:
         model = get_embedding_model()
 
