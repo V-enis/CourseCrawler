@@ -1,67 +1,24 @@
 services:
-  # --- Backend Services (from cc-backend) ---
+  # 1. Django Backend (API)
   - name: api
     type: web
     env: python
-    rootDir: ./cc-backend
+    rootDir: cc-backend
     buildCommand: "./build.sh"
     startCommand: "gunicorn config.wsgi:application --timeout 120"
-    healthCheckPath: /api/ 
+    healthCheckPath: /admin/login/
     envVars:
-      - key: DATABASE_URL
-        fromService:
-          type: psql
-          name: database
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: redis
+      - fromGroup: webdegree-secrets
+      - key: PYTHON_VERSION
+        value: 3.9.18
       - key: DJANGO_SETTINGS_MODULE
         value: config.settings.production
-      - fromGroup: django-secrets 
 
-  - name: worker
-    type: worker
-    env: python
-    rootDir: ./cc-backend
-    buildCommand: "./build.sh"
-    startCommand: "celery -A config worker -l info"
-    envVars:
-      - key: DATABASE_URL
-        fromService:
-          type: psql
-          name: database
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: redis
-      - key: DJANGO_SETTINGS_MODULE
-        value: config.settings.production
-      - fromGroup: django-secrets
-
-  - name: beat
-    type: worker
-    env: python
-    rootDir: ./cc-backend
-    buildCommand: "./build.sh"
-    startCommand: "celery -A config beat -l info"
-    envVars:
-      - key: DATABASE_URL
-        fromService:
-          type: psql
-          name: database
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: redis
-      - key: DJANGO_SETTINGS_MODULE
-        value: config.settings.production
-      - fromGroup: django-secrets
-
-  # --- Frontend Service (from cc-frontend) ---
+  # 2. React Frontend
   - name: web
-    type: static_site
-    rootDir: ./cc-frontend/frontend
+    type: web
+    env: static
+    rootDir: cc-frontend 
     buildCommand: "npm install && npm run build"
     publishDir: dist
     routes:
@@ -69,16 +26,7 @@ services:
         source: /*
         destination: /index.html
     envVars:
-      # tells React app where to find the live API
       - key: VITE_API_BASE_URL
         fromService:
           type: web
           name: api
-
-# --- Database and Redis Definitions for Render ---
-databases:
-  - name: database
-    ipAllowList: [] 
-
-  - name: redis
-    ipAllowList: []

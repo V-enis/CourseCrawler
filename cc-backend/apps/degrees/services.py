@@ -1,19 +1,22 @@
 import os
 import requests
 import re
+import time
 from django.conf import settings
 from pgvector.django import L2Distance
 
 from apps.syllabus.models import CollegeDegree, CollegeCourse
 from apps.courses.models import Course
 from apps.degrees.models import Degree, Semester
-from apps.ml.services import get_embedding_model # Use our lazy-loading service
 
+from apps.ml.services import get_embedding_model 
 
 class DegreeGenerator:
     """
     A service to generate a Degree roadmap by matching a CollegeDegree syllabus
     against the available online Course catalog using a RAG pipeline.
+    
+    UPDATED FOR CLOUD DEPLOYMENT (Hugging Face Serverless API)
     """
     def __init__(self, college_degree_id: int):
         try:
@@ -21,8 +24,9 @@ class DegreeGenerator:
         except CollegeDegree.DoesNotExist:
             raise ValueError("A CollegeDegree with the specified ID does not exist.")
         
-        # Load the LLM API URL from Django settings (which reads from .env)
+        # Load the LLM API URL and Token from Django settings
         self.llm_api_url = settings.HF_INFERENCE_ENDPOINT_URL
+        self.hf_token = settings.HF_TOKEN # New: Needed for Cloud API
         self.generated_degree = None
 
     def _find_candidate_courses(self, syllabus_course: CollegeCourse, used_course_ids: list, num_candidates=5) -> list[Course]:
@@ -31,7 +35,7 @@ class DegreeGenerator:
         Finds the top N candidate courses, excluding any courses that have already been
         selected for this degree plan.
         """
-        # Lazy-load the embedding model only when it's first needed.
+        # Lazy-load the embedding model
         embedding_model = get_embedding_model()
         
         text_to_embed = f"{syllabus_course.title}. {syllabus_course.description}"
@@ -54,19 +58,19 @@ class DegreeGenerator:
     def _select_best_course_with_llm(self, syllabus_course: CollegeCourse, candidates: list[Course], completed_courses: list[str]) -> Course:
         """
         STEP 2: LLM Reasoning (Generation).
-        Selects the best candidate using the local LLM API, providing context
-        about already completed courses to make a more intelligent decision.
+        Selects the best candidate using the Hugging Face Serverless API.
         """
-        if not self.llm_api_url:
-            print("Warning: HF_INFERENCE_ENDPOINT_URL not set. Falling back to top vector result.")
+        if not self.llm_api_url or not self.hf_token:
+            print("Warning: HF_INFERENCE_ENDPOINT_URL or HF_TOKEN not set. Falling back to top vector result.")
             return candidates[0]
 
         candidate_map = {c.id: c for c in candidates}
         
         completed_courses_text = "- " + "\n- ".join(completed_courses) if completed_courses else "None yet."
 
+        # Prompt engineering for Phi-3 / Mistral / Llama
         prompt = f"""<|user|>
-You are an expert academic advisor building a curriculum. Select the single best online course from the list below to fulfill the given syllabus requirement.
+You are an expert academic advisor. Select the single best online course from the list below to fulfill the given syllabus requirement.
 You MUST consider the prerequisite context. The student has already completed the courses listed under "Completed Courses."
 Choose a candidate that is a good topical match AND for which the prerequisites seem to be met by the completed courses.
 Respond ONLY with the numeric ID of the winning course. If none of the candidates are a good fit, respond with "ID: 0".
@@ -84,38 +88,77 @@ Respond ONLY with the numeric ID of the winning course. If none of the candidate
             prereqs = f"Prerequisites: {candidate.prerequisites}" if candidate.prerequisites else "Prerequisites: None listed."
             prompt += f"\n{i+1}. **{candidate.title}** (ID: {candidate.id})\n   - Provider: {candidate.provider}\n   - {prereqs}"
         
-        prompt += """<|end|>
+        prompt += """
+<|end|>
 <|assistant|>
 """
         
-        payload = {"inputs": prompt, "parameters": {"max_new_tokens": 10}}
+        # --- CLOUD API CONFIGURATION ---
+        headers = {
+            "Authorization": f"Bearer {self.hf_token}",
+            "Content-Type": "application/json"
+        }
 
-        try:
-            print(f"     > Sending request to LLM API...")
-            response = requests.post(self.llm_api_url, json=payload, timeout=120)
-            response.raise_for_status()
-            result = response.json()
-            generated_text = result[0]['generated_text']
-            
-            match = re.search(r'\d+', generated_text)
-            if match:
-                winning_id = int(match.group(0))
-                if winning_id == 0:
-                    print("     ! LLM indicated no good fit. Falling back to top vector result.")
-                    return candidates[0]
+        payload = {
+            "inputs": prompt,
+            "parameters": {
+                "max_new_tokens": 50,     # Small number to save time/tokens
+                "temperature": 0.1,       # Low temperature = strict, logical answers
+                "return_full_text": False # CRITICAL: Do not repeat the prompt in the output
+            }
+        }
+
+        # Retry logic for model loading (Cold Boot)
+        for attempt in range(3):
+            try:
+                print(f"     > Sending request to LLM API (Attempt {attempt+1})...")
+                response = requests.post(self.llm_api_url, headers=headers, json=payload, timeout=30)
                 
-                winner = candidate_map.get(winning_id)
-                if winner:
-                    print(f"     < LLM selected Course ID: {winning_id} ('{winner.title}')")
-                    return winner
-                else:
-                    raise ValueError(f"LLM returned ID {winning_id}, which was not in the candidate list.")
-            else:
-                raise ValueError("LLM response did not contain a numeric ID.")
+                # Check for "Model Loading" state (common on free tier)
+                if response.status_code == 503:
+                    estimated_time = response.json().get("estimated_time", 20)
+                    print(f"     ! Model is loading. Waiting {estimated_time} seconds...")
+                    time.sleep(estimated_time)
+                    continue # Try again
 
-        except (requests.exceptions.RequestException, KeyError, ValueError, IndexError) as e:
-            print(f"     ! LLM selection failed: {e}. Falling back to top vector search result.")
-            return candidates[0]
+                response.raise_for_status()
+                result = response.json()
+                
+                # Parse response
+                # HF returns list: [{'generated_text': 'ID: 105'}]
+                if isinstance(result, list) and len(result) > 0:
+                    generated_text = result[0].get('generated_text', '')
+                else:
+                    generated_text = str(result)
+
+                print(f"     > Raw LLM Output: '{generated_text.strip()}'")
+
+                # Regex to find the ID
+                match = re.search(r'\d+', generated_text)
+                if match:
+                    winning_id = int(match.group(0))
+                    
+                    if winning_id == 0:
+                        print("     ! LLM indicated no good fit. Falling back to top vector result.")
+                        return candidates[0]
+                    
+                    winner = candidate_map.get(winning_id)
+                    if winner:
+                        print(f"     < LLM selected Course ID: {winning_id} ('{winner.title}')")
+                        return winner
+                    else:
+                        print(f"     ! LLM hallucinated ID {winning_id}. Falling back to top vector result.")
+                        return candidates[0]
+                else:
+                    print("     ! LLM response did not contain a numeric ID. Falling back.")
+                    return candidates[0]
+
+            except Exception as e:
+                print(f"     ! LLM selection failed: {e}. Falling back to top vector search result.")
+                return candidates[0]
+        
+        # If we exit the loop, all attempts failed
+        return candidates[0]
 
     def generate_roadmap(self):
         """
