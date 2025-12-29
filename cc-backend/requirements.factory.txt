@@ -1,0 +1,19 @@
+# Core
+Django>=4.2
+psycopg2-binary
+dj-database-url
+django-redis
+celery
+redis
+requests
+environs
+
+# The Heavy AI 
+torch
+sentence-transformers
+pgvector
+numpy
+
+# Scraping
+Scrapy
+scrapy-playwright

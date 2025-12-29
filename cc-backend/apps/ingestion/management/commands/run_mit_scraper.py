@@ -1,20 +1,23 @@
 import os
-from django.core.management.base import BaseCommand
 import subprocess
-
+from django.conf import settings
+from django.core.management.base import BaseCommand
 
 class Command(BaseCommand):
     help = "Runs the MIT OCW Scrapy Spider"
 
     def handle(self, *args, **options):
-        scrapy_project_path = "/code/cc_scrapers"
-        spider_name = "mit"
+        # works on Windows AND Docker
+        scrapy_project_path = settings.BASE_DIR / "cc_scrapers"
 
-        self.stdout.write(self.style.SUCCESS(f"Changing directory to {scrapy_project_path}"))
-        os.chdir(scrapy_project_path)
-        self.stdout.write(self.style.SUCCESS(f"Running spider: {spider_name}"))
+        if not scrapy_project_path.exists():
+            self.stdout.write(self.style.ERROR(f"Could not find directory: {scrapy_project_path}"))
+            return
 
-        subprocess.run(['scrapy', 'crawl', spider_name])
+        self.stdout.write(self.style.SUCCESS(f"Running spider 'mit' in: {scrapy_project_path}"))
 
-        self.stdout.write(self.style.SUCCESS("Spider finished running."))
-        
+        try:
+            subprocess.run(['scrapy', 'crawl', 'mit'], cwd=str(scrapy_project_path), check=True)
+            self.stdout.write(self.style.SUCCESS("Spider finished running successfully."))
+        except subprocess.CalledProcessError as e:
+            self

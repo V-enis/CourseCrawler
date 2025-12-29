@@ -21,7 +21,7 @@ DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=60)
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": env.str("REDIS_URL") + "/1", # Get Redis URL from Render/Upstash
+        "LOCATION": env.str("REDIS_URL") + "/1?ssl_cert_reqs=CERT_NONE", # Get Redis URL from Render/Upstash
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
@@ -33,8 +33,8 @@ CACHES = {
 # Celery will use database '0' on our Redis instance
 from celery.schedules import crontab
 
-CELERY_BROKER_URL = env.str("REDIS_URL") + "/0"
-CELERY_RESULT_BACKEND = env.str("REDIS_URL") + "/0"
+CELERY_BROKER_URL = env.str("REDIS_URL") + "/0?ssl_cert_reqs=CERT_NONE"
+CELERY_RESULT_BACKEND = env.str("REDIS_URL") + "/0?ssl_cert_reqs=CERT_NONE"
 CELERY_BEAT_SCHEDULE = {
     'run-mit-scraper-weekly': {
         'task': 'apps.ingestion.tasks.run_mit_ocw_scraper',
