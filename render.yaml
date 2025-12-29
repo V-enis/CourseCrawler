@@ -3,6 +3,7 @@ services:
   - name: api
     type: web
     env: python
+    plan: free
     rootDir: cc-backend
     buildCommand: "./build.sh"
     startCommand: "gunicorn config.wsgi:application --timeout 120"
@@ -14,13 +15,13 @@ services:
       - key: DJANGO_SETTINGS_MODULE
         value: config.settings.production
 
-  # 2. React Frontend
+  # 2. React Frontend (Static Site)
   - name: web
     type: web
     env: static
-    rootDir: cc-frontend 
+    rootDir: cc-frontend
     buildCommand: "npm install && npm run build"
-    publishDir: dist
+    staticPublishPath: ./dist
     routes:
       - type: rewrite
         source: /*
@@ -30,3 +31,4 @@ services:
         fromService:
           type: web
           name: api
+          property: host
