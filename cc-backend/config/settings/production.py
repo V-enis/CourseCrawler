@@ -5,7 +5,7 @@ from .base import * # Inherit all settings from base.py
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS") 
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"]) 
 
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS")
 
@@ -44,7 +44,7 @@ CELERY_BEAT_SCHEDULE = {
 
 
 # --- CORS (CROSS-ORIGIN RESOURCE SHARING) ---
-CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS")
+CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
 
 
 # --- SECURITY MIDDLEWARE SETTINGS (Recommended for Production) ---

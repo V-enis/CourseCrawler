@@ -1,5 +1,5 @@
-# render.yaml
 services:
+  # 1. Django Backend (API)
   - name: api
     type: web
     env: python
@@ -8,60 +8,19 @@ services:
     startCommand: "gunicorn config.wsgi:application --timeout 120"
     healthCheckPath: /admin/login/
     envVars:
-      - key: DATABASE_URL
-        fromService:
-          type: psql
-          name: database
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: redis
+      - fromGroup: webdegree-secrets
+      - key: PYTHON_VERSION
+        value: 3.9.18
       - key: DJANGO_SETTINGS_MODULE
         value: config.settings.production
-      - fromGroup: coursecrawler-secrets
+      # All other secrets (DATABASE_URL, REDIS_URL) come from the Env Group
 
-  - name: worker
-    type: worker
-    env: python
-    rootDir: cc-backend
-    buildCommand: "./build.sh"
-    startCommand: "celery -A config worker -l info"
-    envVars:
-      - key: DATABASE_URL
-        fromService:
-          type: psql
-          name: database
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: redis
-      - key: DJANGO_SETTINGS_MODULE
-        value: config.settings.production
-      - fromGroup: coursecrawler-secrets
-
-  - name: beat
-    type: worker
-    env: python
-    rootDir: cc-backend
-    buildCommand: "./build.sh"
-    startCommand: "celery -A config beat -l info"
-    envVars:
-      - key: DATABASE_URL
-        fromService:
-          type: psql
-          name: database
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: redis
-      - key: DJANGO_SETTINGS_MODULE
-        value: config.settings.production
-      - fromGroup: coursecrawler-secrets
-
-staticSites:
+  # 2. React Frontend
   - name: web
-    env: node
-    rootDir: cc-frontend/frontend
+    type: web
+    env: static
+    # Double check this path! If your package.json is in cc-frontend, remove '/frontend'
+    rootDir: cc-frontend 
     buildCommand: "npm install && npm run build"
     publishDir: dist
     routes:
@@ -73,10 +32,3 @@ staticSites:
         fromService:
           type: web
           name: api
-
-databases:
-  - name: database
-    ipAllowList: []
-
-  - name: redis
-    ipAllowList: []

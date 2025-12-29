@@ -97,5 +97,6 @@ SIMPLE_JWT = {
 }
 
 # --- HUGGING FACE / LOCAL LLM SETTINGS ---
-HF_INFERENCE_ENDPOINT_URL = env.str("HF_INFERENCE_ENDPOINT_URL", default=None)
-HF_INFERENCE_ENDPOINT_TOKEN = env.str("HF_INFERENCE_ENDPOINT_TOKEN", default=None)
+HF_INFERENCE_ENDPOINT_URL = env.str("HF_INFERENCE_ENDPOINT_URL", default="https://api-inference.huggingface.co/models/microsoft/Phi-3-mini-4k-instruct")
+# Note: Changing this to HF_TOKEN to be shorter/standard
+HF_TOKEN = env.str("HF_TOKEN", default=None)
