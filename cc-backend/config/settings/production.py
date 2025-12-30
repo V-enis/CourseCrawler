@@ -1,4 +1,5 @@
 from .base import * # Inherit all settings from base.py
+import ssl 
 
 # --- PRODUCTION-SPECIFIC SETTINGS ---
 
@@ -21,9 +22,15 @@ DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=60)
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": env.str("REDIS_URL") + "/1?ssl_cert_reqs=CERT_NONE", # Get Redis URL from Render/Upstash
+        # Use the raw URL from env (don't add /1 manually here, let django-redis handle it via OPTIONS if needed, 
+        # or rely on the default db 0 if /1 causes issues. Standard practice is to just use the URL).
+        "LOCATION": env.str("REDIS_URL"), 
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            # This handles the SSL certificate issue cleanly
+            "CONNECTION_POOL_KWARGS": {
+                "ssl_cert_reqs": ssl.CERT_NONE
+            }
         }
     }
 }
@@ -33,12 +40,16 @@ CACHES = {
 # Celery will use database '0' on our Redis instance
 from celery.schedules import crontab
 
-CELERY_BROKER_URL = env.str("REDIS_URL") + "/0?ssl_cert_reqs=CERT_NONE"
-CELERY_RESULT_BACKEND = env.str("REDIS_URL") + "/0?ssl_cert_reqs=CERT_NONE"
+CELERY_BROKER_URL = env.str("REDIS_URL") 
+CELERY_RESULT_BACKEND = env.str("REDIS_URL")
+
+CELERY_REDIS_BACKEND_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE}
+CELERY_BROKER_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE}
+
 CELERY_BEAT_SCHEDULE = {
     'run-mit-scraper-weekly': {
         'task': 'apps.ingestion.tasks.run_mit_ocw_scraper',
-        'schedule': crontab(minute='5', hour='4', day_of_week='sun'), # Every Sunday at 4:05 AM UTC
+        'schedule': crontab(minute='5', hour='4', day_of_week='sun'),
     },
 }
 
@@ -47,7 +58,9 @@ CELERY_BEAT_SCHEDULE = {
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
 
 
-# --- SECURITY MIDDLEWARE SETTINGS (Recommended for Production) ---
+# --- SECURITY MIDDLEWARE SETTINGS ---
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
 SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=True)
 CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=True)
