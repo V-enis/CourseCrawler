@@ -4,7 +4,7 @@ import ssl
 # --- PRODUCTION-SPECIFIC SETTINGS ---
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"]) 
 
