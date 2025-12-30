@@ -1,6 +1,5 @@
 from django.core.management.base import BaseCommand
 from apps.courses.models import Course
-from apps.courses.tasks import generate_embedding_for_course
 from tqdm import tqdm
 
 class Command(BaseCommand):
@@ -8,6 +7,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # find courses where embeddings is null
+        from apps.courses.tasks import generate_embedding_for_course
+
         courses_to_process = Course.objects.filter(embedding__isnull=True)
         count = courses_to_process.count()
 

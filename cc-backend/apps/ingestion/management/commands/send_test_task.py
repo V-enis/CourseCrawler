@@ -1,10 +1,11 @@
 from django.core.management.base import BaseCommand
-from apps.ingestion.tasks import run_mit_ocw_scraper
 
 class Command(BaseCommand):
     help = 'Sends a test task to the Celery worker.'
 
     def handle(self, *args, **options):
+        from apps.ingestion.tasks import run_mit_ocw_scraper
+
         self.stdout.write("Attempting to send task to Celery...")
         try:
             run_mit_ocw_scraper.delay()

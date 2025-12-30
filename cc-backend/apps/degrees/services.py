@@ -42,7 +42,7 @@ class DegreeGenerator:
         syllabus_embedding = embedding_model.encode(text_to_embed)
         
         # Start with a base query for all courses that have an embedding.
-        base_query = Course.objects.filter(embedding__isnull=False)
+        base_query = Course.objects.select_related('provider').filter(embedding__isnull=False)
         
         # Exclude courses that are already in our "used" list for this degree.
         if used_course_ids:
@@ -57,18 +57,16 @@ class DegreeGenerator:
 
     def _select_best_course_with_llm(self, syllabus_course: CollegeCourse, candidates: list[Course], completed_courses: list[str]) -> Course:
         """
-        STEP 2: LLM Reasoning (Generation).
-        Selects the best candidate using the Hugging Face Serverless API.
+        STEP 2: LLM Reasoning (Local Generation).
         """
-        if not self.llm_api_url or not self.hf_token:
-            print("Warning: HF_INFERENCE_ENDPOINT_URL or HF_TOKEN not set. Falling back to top vector result.")
+        if not self.llm_api_url:
+            print("Warning: HF_INFERENCE_ENDPOINT_URL not set. Falling back to top vector result.")
             return candidates[0]
 
         candidate_map = {c.id: c for c in candidates}
         
+        # ... (Prompt construction remains the same) ...
         completed_courses_text = "- " + "\n- ".join(completed_courses) if completed_courses else "None yet."
-
-        # Prompt engineering for Phi-3 / Mistral / Llama
         prompt = f"""<|user|>
 You are an expert academic advisor. Select the single best online course from the list below to fulfill the given syllabus requirement.
 You MUST consider the prerequisite context. The student has already completed the courses listed under "Completed Courses."
@@ -88,77 +86,74 @@ Respond ONLY with the numeric ID of the winning course. If none of the candidate
             prereqs = f"Prerequisites: {candidate.prerequisites}" if candidate.prerequisites else "Prerequisites: None listed."
             prompt += f"\n{i+1}. **{candidate.title}** (ID: {candidate.id})\n   - Provider: {candidate.provider}\n   - {prereqs}"
         
-        prompt += """
-<|end|>
-<|assistant|>
-"""
+        prompt += "\n<|end|>\n<|assistant|>\n"
         
-        # --- CLOUD API CONFIGURATION ---
+        # --- LOCAL API CONFIGURATION ---
         headers = {
-            "Authorization": f"Bearer {self.hf_token}",
             "Content-Type": "application/json"
         }
+        # Only add token if it exists (Cloud mode)
+        if self.hf_token:
+            headers["Authorization"] = f"Bearer {self.hf_token}"
 
+        # Standard payload
         payload = {
             "inputs": prompt,
             "parameters": {
-                "max_new_tokens": 50,     # Small number to save time/tokens
-                "temperature": 0.1,       # Low temperature = strict, logical answers
-                "return_full_text": False # CRITICAL: Do not repeat the prompt in the output
+                "max_new_tokens": 50,
+                "temperature": 0.1,
             }
         }
 
-        # Retry logic for model loading (Cold Boot)
-        for attempt in range(3):
-            try:
-                print(f"     > Sending request to LLM API (Attempt {attempt+1})...")
-                response = requests.post(self.llm_api_url, headers=headers, json=payload, timeout=30)
+        try:
+            print(f"     > Sending request to Local LLM...")
+            response = requests.post(self.llm_api_url, headers=headers, json=payload, timeout=120)
+            response.raise_for_status()
+            
+            # Flexible Parsing: Handle different local API response formats
+            result = response.json()
+            
+            # Case A: Hugging Face style list [{'generated_text': '...'}]
+            if isinstance(result, list) and len(result) > 0 and 'generated_text' in result[0]:
+                generated_text = result[0]['generated_text']
+            # Case B: Direct dict {'generated_text': '...'}
+            elif isinstance(result, dict) and 'generated_text' in result:
+                generated_text = result['generated_text']
+            # Case C: OpenAI style {'choices': [{'text': '...'}]}
+            elif isinstance(result, dict) and 'choices' in result:
+                generated_text = result['choices'][0].get('text', '') or result['choices'][0].get('message', {}).get('content', '')
+            else:
+                generated_text = str(result)
+
+            print(f"     > Raw LLM Output: '{generated_text.strip()}'")
+
+            # Regex to find the ID
+            match = re.search(r'\d+', generated_text)
+            if match:
+                winning_id = int(match.group(0))
                 
-                # Check for "Model Loading" state (common on free tier)
-                if response.status_code == 503:
-                    estimated_time = response.json().get("estimated_time", 20)
-                    print(f"     ! Model is loading. Waiting {estimated_time} seconds...")
-                    time.sleep(estimated_time)
-                    continue # Try again
-
-                response.raise_for_status()
-                result = response.json()
-                
-                # Parse response
-                # HF returns list: [{'generated_text': 'ID: 105'}]
-                if isinstance(result, list) and len(result) > 0:
-                    generated_text = result[0].get('generated_text', '')
-                else:
-                    generated_text = str(result)
-
-                print(f"     > Raw LLM Output: '{generated_text.strip()}'")
-
-                # Regex to find the ID
-                match = re.search(r'\d+', generated_text)
-                if match:
-                    winning_id = int(match.group(0))
-                    
-                    if winning_id == 0:
-                        print("     ! LLM indicated no good fit. Falling back to top vector result.")
-                        return candidates[0]
-                    
-                    winner = candidate_map.get(winning_id)
-                    if winner:
-                        print(f"     < LLM selected Course ID: {winning_id} ('{winner.title}')")
-                        return winner
-                    else:
-                        print(f"     ! LLM hallucinated ID {winning_id}. Falling back to top vector result.")
-                        return candidates[0]
-                else:
-                    print("     ! LLM response did not contain a numeric ID. Falling back.")
+                if winning_id == 0:
+                    print("     ! LLM indicated no good fit.")
                     return candidates[0]
-
-            except Exception as e:
-                print(f"     ! LLM selection failed: {e}. Falling back to top vector search result.")
+                
+                winner = candidate_map.get(winning_id)
+                if winner:
+                    print(f"     < LLM selected Course ID: {winning_id} ('{winner.title}')")
+                    return winner
+                else:
+                    if winning_id <= len(candidates):
+                         print(f"     ! LLM likely output an index ({winning_id}) instead of ID. Using that candidate.")
+                         return candidates[winning_id - 1]
+                    
+                    print(f"     ! LLM hallucinated ID {winning_id}. Fallback.")
+                    return candidates[0]
+            else:
+                print("     ! No ID found in response.")
                 return candidates[0]
-        
-        # If we exit the loop, all attempts failed
-        return candidates[0]
+
+        except Exception as e:
+            print(f"     ! LLM Error: {e}. Falling back to vector.")
+            return candidates[0]
 
     def generate_roadmap(self):
         """

@@ -9,6 +9,8 @@ def trigger_embedding_generation(sender, instance, created, **kwargs):
     When a Course is saved, trigger the Celery task to generate its embedding,
     but ONLY if one is actually needed. This prevents redundant task queuing.
     """
+    from .tasks import generate_embedding_for_course
+
     update_fields = kwargs.get('update_fields') or frozenset()
 
     # The fields that, if changed, require a new embedding.
