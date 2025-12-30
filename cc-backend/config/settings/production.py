@@ -3,7 +3,7 @@ from .base import * # Inherit all settings from base.py
 # --- PRODUCTION-SPECIFIC SETTINGS ---
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = env.bool("DEBUG", default=False)
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"]) 
 
