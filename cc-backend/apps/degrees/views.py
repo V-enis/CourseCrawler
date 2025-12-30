@@ -15,7 +15,8 @@ class DegreeViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = Degree.objects.all().prefetch_related(
         'semesters__courses__platform',
-        'semesters__courses__provider'
+        'semesters__courses__provider',
+        'semesters__courses__subjects',
     )
     permission_classes = [permissions.AllowAny]
     serializer_class = DegreeSerializer 
